@@ -1,0 +1,531 @@
+{
+  "name": "Lead Qualification & CRM Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-intake",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "cd0aa64a-388a-485d-9ae6-237e9c47d05e",
+      "name": "Lead Intake Webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6dba62ba-f7bb-47fb-8a7a-bc453805a682",
+              "name": "name",
+              "value": "={{ $json.body.name }}",
+              "type": "string"
+            },
+            {
+              "id": "2865ac9c-6cf5-4e3d-8766-59a1b7d624c4",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "98c5a03f-e901-4c95-9c1f-27a1017b75f4",
+              "name": "company",
+              "value": "={{ $json.body.company }}",
+              "type": "string"
+            },
+            {
+              "id": "832d2ec9-f582-4a62-846e-0b997e94c5cb",
+              "name": "team_size",
+              "value": "={{ $json.body.team_size }}",
+              "type": "number"
+            },
+            {
+              "id": "b9545b2c-c05e-4940-b471-6a442d8b3c3d",
+              "name": "budget",
+              "value": "={{ $json.body.budget }}",
+              "type": "number"
+            },
+            {
+              "id": "1a3a5ce9-f0d9-4db1-99e3-60e84660e471",
+              "name": "requirement",
+              "value": "={{ $json.body.requirement }}",
+              "type": "string"
+            },
+            {
+              "id": "6731d757-8bd1-46c6-aaf2-90693c9f7e8a",
+              "name": "timeline",
+              "value": "={{ $json.body.timeline }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "66435a50-0dc4-4757-aca0-7c3b2c56299f",
+      "name": "Extract Lead Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a53e4ed9-c32b-43d4-a465-084722549c72",
+              "leftValue": "={{ $json.name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "d35851d3-cb07-4345-8dcf-92d0d62ffad4",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        0
+      ],
+      "id": "d33ceff1-0270-49f2-bda9-511ab2bdaa7f",
+      "name": "Validate Required Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nreturn $input.all().map(item => {\n  const lead = item.json;\n\n  return {\n    json: {\n      ...lead,\n      email_normalized: String(lead.email ?? \"\")\n        .trim()\n        .toLowerCase()\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        -96
+      ],
+      "id": "e95d034d-99cc-4eb4-a971-7670f610c8ad",
+      "name": "Normalize Lead Data"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "email_normalized",
+              "lookupValue": "={{ $json.email_normalized }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        896,
+        -96
+      ],
+      "id": "90e46be0-9d99-4419-8877-4d9a0ef6c067",
+      "name": "Check Existing Lead",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3b5c4c05-83e2-4d07-8313-b64dc9331f9f",
+              "leftValue": "={{ $json.email_normalized }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        -96
+      ],
+      "id": "971bdde4-0f94-4292-a660-5eb3aafd5783",
+      "name": "Is Duplicate?"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const lead = $('Normalize Lead Data').item.json;\n\nconst budget = Number(lead.budget) || 0;\nconst teamSize = Number(lead.team_size) || 0;\nconst timeline = String(lead.timeline || '').toLowerCase();\n\nlet score = 0;\n\n// Budget — maximum 40 points\nif (budget >= 5000) {\n  score += 40;\n} else if (budget >= 2000) {\n  score += 30;\n} else if (budget >= 1000) {\n  score += 20;\n} else if (budget > 0) {\n  score += 10;\n}\n\n// Team size — maximum 30 points\nif (teamSize >= 50) {\n  score += 30;\n} else if (teamSize >= 20) {\n  score += 20;\n} else if (teamSize >= 5) {\n  score += 10;\n}\n\n// Timeline — maximum 30 points\nif (\n  timeline.includes('this week') ||\n  timeline.includes('immediately') ||\n  timeline.includes('asap')\n) {\n  score += 30;\n} else if (\n  timeline.includes('this month') ||\n  timeline.includes('month')\n) {\n  score += 20;\n} else if (\n  timeline.includes('quarter') ||\n  timeline.includes('3 month')\n) {\n  score += 10;\n}\n\n// Qualification\nlet qualification = 'Cold';\n\nif (score >= 70) {\n  qualification = 'Hot';\n} else if (score >= 40) {\n  qualification = 'Warm';\n}\n\nlet qualificationReason = '';\n\nif (qualification === 'Hot') {\n  qualificationReason =\n    `High-priority lead with a budget of $${budget}, ` +\n    `a team size of ${teamSize}, and a timeline of \"${lead.timeline}\".`;\n} else if (qualification === 'Warm') {\n  qualificationReason =\n    `Promising lead with a budget of $${budget}, ` +\n    `a team size of ${teamSize}, and a timeline of \"${lead.timeline}\".`;\n} else {\n  qualificationReason =\n    `Lower-priority lead with a budget of $${budget}, ` +\n    `a team size of ${teamSize}, and a timeline of \"${lead.timeline}\".`;\n}\n\nreturn {\n  json: {\n    ...lead,\n    lead_score: score,\n    qualification: qualification,\n    qualification_reason: qualificationReason\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        -16
+      ],
+      "id": "a7a5d610-f982-4e3b-b1da-3675d2f2710a",
+      "name": "Score & Qualify Lead"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email_normalized": "={{ $('Normalize Lead Data').item.json.email_normalized }}",
+            "name": "={{ $('Normalize Lead Data').item.json.name }}",
+            "email": "={{ $('Normalize Lead Data').item.json.email }}",
+            "company": "={{ $('Normalize Lead Data').item.json.company }}",
+            "team_size": "={{ $('Normalize Lead Data').item.json.team_size }}",
+            "budget": "={{ $('Normalize Lead Data').item.json.budget }}",
+            "requirement": "={{ $('Normalize Lead Data').item.json.requirement }}",
+            "timeline": "={{ $('Normalize Lead Data').item.json.timeline }}",
+            "lead_score": "={{ $json.lead_score }}",
+            "qualification": "={{ $json.qualification }}",
+            "qualification_reason": "={{ $json.qualification_reason }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "email_normalized",
+              "displayName": "email_normalized",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "team_size",
+              "displayName": "team_size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "budget",
+              "displayName": "budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "requirement",
+              "displayName": "requirement",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "timeline",
+              "displayName": "timeline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "lead_score",
+              "displayName": "lead_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "qualification",
+              "displayName": "qualification",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "qualification_reason",
+              "displayName": "qualification_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1424,
+        -16
+      ],
+      "id": "fd7f6b32-84e7-4afb-ab4d-a440da98611f",
+      "name": "Save Lead to CRM"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "83551acd-c188-4f94-bb33-4c10e9ffc773",
+              "leftValue": "={{ $json.qualification }}",
+              "rightValue": "Hot",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1568,
+        -16
+      ],
+      "id": "b75350a0-9134-4bea-93a1-e474ecc68a42",
+      "name": "Is Lead Hot?"
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR_NOTIFICATION_EMAIL@example.com",
+        "subject": "=🔥 Hot Lead Alert - {{ $json.name }} - Score {{ $json.lead_score }}",
+        "message": "={{\n`\n<h2>🔥 Hot Lead Alert</h2>\n\n<p>A new high-priority lead has been received and qualified.</p>\n\n<table>\n  <tr>\n    <td><strong>Name:</strong></td>\n    <td>${$json.name}</td>\n  </tr>\n  <tr>\n    <td><strong>Company:</strong></td>\n    <td>${$json.company}</td>\n  </tr>\n  <tr>\n    <td><strong>Email:</strong></td>\n    <td>${$json.email}</td>\n  </tr>\n  <tr>\n    <td><strong>Lead Score:</strong></td>\n    <td>${$json.lead_score}/100</td>\n  </tr>\n  <tr>\n    <td><strong>Qualification:</strong></td>\n    <td>${$json.qualification}</td>\n  </tr>\n  <tr>\n    <td><strong>Budget:</strong></td>\n    <td>$${$json.budget}</td>\n  </tr>\n  <tr>\n    <td><strong>Team Size:</strong></td>\n    <td>${$json.team_size}</td>\n  </tr>\n  <tr>\n    <td><strong>Timeline:</strong></td>\n    <td>${$json.timeline}</td>\n  </tr>\n  <tr>\n    <td><strong>Requirement:</strong></td>\n    <td>${$json.requirement}</td>\n  </tr>\n</table>\n\n<p><strong>Qualification Reason:</strong><br>\n${$json.qualification_reason}</p>\n\n<p><strong>Recommended Action:</strong> Review and follow up with this lead promptly.</p>\n`\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        -112
+      ],
+      "id": "2c49a1d0-236d-4cc7-a7da-3857a5edcd5d",
+      "name": "Send Hot Lead Alert"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Lead Intake Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Lead Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Lead Fields": {
+      "main": [
+        [
+          {
+            "node": "Validate Required Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Required Fields": {
+      "main": [
+        [
+          {
+            "node": "Normalize Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Lead Data": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing Lead": {
+      "main": [
+        [
+          {
+            "node": "Is Duplicate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Duplicate?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Score & Qualify Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score & Qualify Lead": {
+      "main": [
+        [
+          {
+            "node": "Save Lead to CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Lead to CRM": {
+      "main": [
+        [
+          {
+            "node": "Is Lead Hot?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Lead Hot?": {
+      "main": [
+        [
+          {
+            "node": "Send Hot Lead Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [],
+  "tags": []
+}
